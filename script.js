@@ -84,19 +84,15 @@ const GameController = () => {
 
         player.addMoves(position);
 
-        if(_checkForWin(player)) return;
-
         _switchPlayerTurn();
         _printNewRound();
     };
 
-    const _checkForWin = (player) => {
+    const checkForWin = (player) => {
         const moves = player.getMoves().sort((a,b) => a - b);
-        console.log(player.getName(), moves)
 
         for (const combination of winningCombinations) {
             if (combination.every(cellIndex => moves.includes(cellIndex))) {
-              alert(`Congrats, you have won! ${player.getName()}`);
               return true;
             }
         }
@@ -105,16 +101,45 @@ const GameController = () => {
     
     _printNewRound();
     
-    return { playRound, getActivePlayer, getBoard: board.getBoard };  
+    return { playRound, getActivePlayer, getBoard: board.getBoard, checkForWin };  
 }
 
-const ScreenController = (() => {
+const ScreenController = () => {
     const game = GameController();
-    const cells = document.querySelectorAll('.cell')
+    const cells = document.querySelectorAll('.cell');
 
     cells.forEach((cell, index) => {
         cell.dataset.cell = index;
-        cell.addEventListener('click', () => game.playRound(parseInt(cell.dataset.cell)));
+        cell.addEventListener('click', clickHandleBoard);
     });
-})();
+
+    const updateScreen = () => {
+        const currentBoard = game.getBoard();
+
+        console.log('hello')
+
+        cells.forEach((cell, index) => {
+            cell.innerHTML = currentBoard[index].getSymbol() ? currentBoard[index].getSymbol() : ""
+        })
+    };
+
+    function clickHandleBoard(e) {
+        const index = parseInt(e.target.dataset.cell);
+        const _player = game.getActivePlayer();
+        game.playRound(index)
+        updateScreen();
+        e.target.removeEventListener('click', clickHandleBoard)
+        if(game.checkForWin(_player)){
+            console.log(`${_player.getName()} won!`)
+            endGame()
+        }
+    }
+
+    function endGame(){
+        cells.forEach(cell => cell.removeEventListener('click', clickHandleBoard))
+    }
+
+};
+
+ScreenController();
 
