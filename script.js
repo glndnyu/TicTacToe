@@ -1,24 +1,40 @@
 const Player = (name, symbol) => {
-    return { name, symbol };
+    const moves = [];
+    const _name = name;
+    const _symbol = symbol;
+
+    const addMoves = (position) => {
+        moves.push(position);
+    };
+
+    const getMoves = () => moves;
+
+    const getName = () => _name;
+
+    const getSymbol = () => _symbol;
+
+    return { addMoves, getMoves, getName, getSymbol };
 };
 
 
 const Board = () => {
     const board = new Array(9);
+    let boardLength = board.length;
 
-    for(let i=0; i<board.length; i++)
+    for(let i=0; i<boardLength; i++)
         board[i] = Cell();
 
     const getBoard = () => board;
 
     const placeSymbol = (player, index) => {
         if(!board[index].isAvailable()) return;
+
         board[index].addSymbol(player);
     };
 
     const printBoard = () => {
-        console.log(board.reduce((rows, key, index) => (index % 3 == 0 ? rows.push([key.getValue()]) 
-        : rows[rows.length-1].push(key.getValue())) && rows, []));
+        console.log(board.reduce((rows, key, index) => (index % 3 == 0 ? rows.push([key.getSymbol()]) 
+        : rows[rows.length-1].push(key.getSymbol())) && rows, []));
     };
 
     return { getBoard, placeSymbol, printBoard };
@@ -31,51 +47,74 @@ const Cell = () => {
         _symbol = symbol;
     };
 
-    const getValue = () => _symbol;
+    const getSymbol = () => _symbol;
 
     const isAvailable = () => {
         return _symbol ? false : true;
     };
 
-    return { addSymbol, getValue, isAvailable };
+    return { addSymbol, getSymbol, isAvailable };
 }
 
 const GameController = () => {
+    const board = Board();
     const player_one = Player('player 1', 'X');
     const player_two = Player('player 2', 'O');
-
-    const board = Board();
-
+    const winningCombinations = [[0, 1, 2], [3, 4, 5], [6, 7, 8],
+                            [0, 3, 6], [1, 4, 7], [2, 5, 8],
+                            [0, 4, 8], [2, 4, 6]];
     let activePlayer = player_one;
 
-    const switchPlayerTurn = () => {
+    const _switchPlayerTurn = () => {
         activePlayer = activePlayer === player_one ? player_two : player_one;
     };
 
     const getActivePlayer = () => activePlayer;
 
-    const printNewRound = () => {
+    const _printNewRound = () => {
         board.printBoard();
-        console.log(`${getActivePlayer().name}'s turn.`);
+
+        console.log(`${getActivePlayer().getName()}'s turn.`);
     };
     
-    const playRound = (index) => {
-        board.placeSymbol(getActivePlayer().symbol, index);
-    
-        /*  This is where we would check for a winner and handle that logic,
-            such as a win message. */
-    
-        switchPlayerTurn();
-        printNewRound();
+    const playRound = (position) => {
+        const player = getActivePlayer();
+
+        board.placeSymbol(player.getSymbol(), position);
+
+        player.addMoves(position);
+
+        if(_checkForWin(player)) return;
+
+        _switchPlayerTurn();
+        _printNewRound();
+    };
+
+    const _checkForWin = (player) => {
+        const moves = player.getMoves().sort((a,b) => a - b);
+        console.log(player.getName(), moves)
+
+        for (const combination of winningCombinations) {
+            if (combination.every(cellIndex => moves.includes(cellIndex))) {
+              alert(`Congrats, you have won! ${player.getName()}`);
+              return true;
+            }
+        }
+        return false;
     };
     
-    printNewRound();
+    _printNewRound();
     
-    return {
-        playRound,
-        getActivePlayer,
-        getBoard: board.getBoard
-    };  
+    return { playRound, getActivePlayer, getBoard: board.getBoard };  
 }
 
-const game = GameController();
+const ScreenController = (() => {
+    const game = GameController();
+    const cells = document.querySelectorAll('.cell')
+
+    cells.forEach((cell, index) => {
+        cell.dataset.cell = index;
+        cell.addEventListener('click', () => game.playRound(parseInt(cell.dataset.cell)));
+    });
+})();
+
