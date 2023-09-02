@@ -142,22 +142,24 @@ const gameController = (() => {
             _printBoard();
             console.log(`Player ${player.getSymbol()} wins!`);
             return;
+        } else if (checkForTie(board.getBoard())) {
+            console.log('IS A TAY')
+            return;
         }
         _switchPlayerTurn();
         
 
         ai.makeAIMove(board, getActivePlayer());
+        if(checkForWin(board.getBoard(), getActivePlayer().getSymbol())) {
+            _printBoard();
+            console.log(`Player ${getActivePlayer().getSymbol()} wins!`);
+            return;
+        }
         _switchPlayerTurn();
         _printBoard();
-    };
 
-    // const checkWinner = () => {
-    //     if(checkForWin(board.getBoard(), player.getSymbol())) {
-    //         _printBoard();
-    //         console.log(`Player ${player.getSymbol()} wins!`);
-    //         return;
-    //     }
-    // }
+        
+    };
 
     const checkForWin = (board, player) => {
         return (
@@ -172,14 +174,18 @@ const gameController = (() => {
         );
     };
 
+    const checkForTie = (board) => {
+        if(checkForWin(board, huPlayer) || checkForWin(board, aiPlayer)) return false;
+
+        return board.every(cell => !cell.isAvailable());
+    }
+
     _printBoard();
     
     return { playRound, getActivePlayer, getBoard: board.getBoard, checkForWin };  
 })();
 
-/* For DOM Interface
-const ScreenController = () => {
-    const game = GameController();
+const ScreenController = (() => {
     const cells = document.querySelectorAll('.cell');
     const playerDisplay = document.getElementById('player');
 
@@ -189,24 +195,21 @@ const ScreenController = () => {
     });
 
     const updateScreen = () => {
-        const currentBoard = game.getBoard();
+        const currentBoard = gameController.getBoard();
 
         cells.forEach((cell, index) => {
-            cell.innerHTML = currentBoard[index].getSymbol() ? currentBoard[index].getSymbol() : "";
+            cell.innerHTML = currentBoard[index].isAvailable() ? "" : currentBoard[index].getSymbol();
+            if(cell.innerHTML)  cell.removeEventListener('click', clickHandleBoard);
         })
-        playerDisplay.innerHTML = game.getActivePlayer().getName();
+        playerDisplay.innerHTML = gameController.getActivePlayer().getSymbol();
     };
 
     function clickHandleBoard(e) {
         const index = parseInt(e.target.dataset.cell);
-        const _player = game.getActivePlayer();
-        game.playRound(index);
+        const _player = gameController.getActivePlayer();
+        gameController.playRound(index);
         updateScreen();
         e.target.removeEventListener('click', clickHandleBoard);
-        if(game.checkForWin(_player)){
-            console.log(`${_player.getName()} won!`);
-            endGame();
-        }
     }
 
     function endGame(){
@@ -215,8 +218,8 @@ const ScreenController = () => {
 
     updateScreen();
 
-};
-*/
+})();
+
 
 
 
