@@ -26,7 +26,7 @@ const AI = () => {
             return { score: -10 };
         } else if (gameController.checkForWin(newBoard, player) && player === 'O'){
             return { score: 10 };
-        } else if (availSpots.length === 0) {
+        } else if (gameController.checkForTie(newBoard)) {
             return { score: 0 };
         }
 
@@ -38,10 +38,10 @@ const AI = () => {
             newBoard[availSpots[i]].addSymbol(player);
 
             if (player === 'O'){
-                let result = minimax(newBoard, 'X');
+                let result = minimax([...newBoard], 'X');
                 move.score = result.score
             } else {
-                let result = minimax(newBoard, 'O');
+                let result = minimax([...newBoard], 'O');
                 move.score = result.score
             }
 
@@ -182,7 +182,7 @@ const gameController = (() => {
 
     _printBoard();
     
-    return { playRound, getActivePlayer, getBoard: board.getBoard, checkForWin };  
+    return { playRound, getActivePlayer, getBoard: board.getBoard, checkForWin, checkForTie };  
 })();
 
 const ScreenController = (() => {
