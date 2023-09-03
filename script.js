@@ -1,51 +1,87 @@
-const Player = (symbol, isAI = false) => {
-    const _symbol = symbol;
+const Player = (symbol, isAI = false) => ({ symbol, isAI });
+
+const Cell = (i) => {
+    let _symbol = i;
+
+    const addSymbol = (symbol) => {
+        _symbol = symbol;
+    };
 
     const getSymbol = () => _symbol;
 
-    return { getSymbol, isAI};
-};
+    const isAvailable = () => (_symbol !== 'O' && _symbol !== 'X');
 
-const emptyCells = (board) => {
-    return board.filter(cell => cell.isAvailable()).map(cell => cell.getSymbol());
+    return { addSymbol, getSymbol, isAvailable };
 }
+
+//Board controls
+const Board = () => {
+    const cells = Array.from({ length: 9}, (_, i) => Cell(i));
+
+    const getBoard = () => cells.map(cell => cell.getSymbol());
+
+    const makeMove = (player, index) => {
+
+        if (typeof player === 'number'){
+            cells[index].addSymbol(player);
+            return
+        }
+
+        if (!cells[index].isAvailable()) return;
+
+        cells[index].addSymbol(player);
+    };
+
+    const emptyCells = () => {
+        return cells.filter(cell => cell.isAvailable()).map(cell => cell.getSymbol());
+    }
+
+    const printBoard = () => {
+            console.log(cells.reduce((rows, key, index) => (index % 3 == 0 ? rows.push([key.getSymbol()]) 
+            : rows[rows.length-1].push(key.getSymbol())) && rows, []));
+    };
+
+    return { getBoard, makeMove, printBoard, emptyCells };
+};
 
 const AI = () => {
     const makeAIMove = (board, player) => {
-        const _symbol = player.getSymbol()
-        const bestMove = minimax(board.getBoard(), _symbol);
+        const _symbol = player.symbol
+        const bestMove = minimax(board, _symbol);
 
         board.makeMove(_symbol, bestMove.index);
     }
 
     const minimax = (newBoard, player) => {
-        const availSpots = emptyCells(newBoard);
+        const availSpots = newBoard.emptyCells();
         const availSpots_length = availSpots.length;
+        const _board = newBoard.getBoard();
 
-        if (gameController.checkForWin(newBoard, player) && player === 'X'){
+        if (gameController.checkForWin(_board, player) && player === 'X'){
             return { score: -10 };
-        } else if (gameController.checkForWin(newBoard, player) && player === 'O'){
+        } else if (gameController.checkForWin(_board, player) && player === 'O'){
             return { score: 10 };
-        } else if (gameController.checkForTie(newBoard)) {
+        } else if (gameController.checkForTie(_board)) {
             return { score: 0 };
         }
 
         const moves = [];
         for (let i = 0; i < availSpots_length; i++){
             let move = {};
-            move.index = newBoard[availSpots[i]].getSymbol();
 
-            newBoard[availSpots[i]].addSymbol(player);
+            move.index = availSpots[i];
+
+            newBoard.makeMove(player, availSpots[i])
 
             if (player === 'O'){
-                let result = minimax([...newBoard], 'X');
+                let result = minimax(newBoard, 'X');
                 move.score = result.score
             } else {
-                let result = minimax([...newBoard], 'O');
+                let result = minimax(newBoard, 'O');
                 move.score = result.score
             }
 
-            newBoard[availSpots[i]].addSymbol(move.index);
+            newBoard.makeMove(move.index, availSpots[i]);
 
             moves.push(move);
         }
@@ -77,46 +113,6 @@ const AI = () => {
 
 };
 
-//Board controls
-const Board = () => {
-    const board = new Array(9);
-    let boardLength = board.length;
-
-    for(let i=0; i<boardLength; i++)
-        board[i] = Cell(i);
-
-    const getBoard = () => board;
-
-    const makeMove = (player, index) => {
-        if(!board[index].isAvailable()) return;
-
-        board[index].addSymbol(player);
-    };
-
-    const printBoard = () => {
-            console.log(board.reduce((rows, key, index) => (index % 3 == 0 ? rows.push([key.getSymbol()]) 
-            : rows[rows.length-1].push(key.getSymbol())) && rows, []));
-    };
-
-    return { getBoard, makeMove, printBoard, emptyCells };
-};
-
-const Cell = (i) => {
-    let _symbol = i;
-
-    const addSymbol = (symbol) => {
-        _symbol = symbol;
-    };
-
-    const getSymbol = () => _symbol;
-
-    const isAvailable = () => {
-        return _symbol == 'O' || _symbol == 'X' ? false : true;
-    };
-
-    return { addSymbol, getSymbol, isAvailable };
-}
-
 const gameController = (() => {
     const board = Board();
     const ai = AI();
@@ -137,10 +133,10 @@ const gameController = (() => {
     
     const playRound = (position) => {
         const player = getActivePlayer();
-        board.makeMove(player.getSymbol(), position);
-        if(checkForWin(board.getBoard(), player.getSymbol())) {
+        board.makeMove(player.symbol, position);
+        if(checkForWin(board.getBoard(), player.symbol)) {
             _printBoard();
-            console.log(`Player ${player.getSymbol()} wins!`);
+            console.log(`Player ${player.symbol} wins!`);
             return;
         } else if (checkForTie(board.getBoard())) {
             console.log('IS A TAY')
@@ -150,9 +146,14 @@ const gameController = (() => {
         
 
         ai.makeAIMove(board, getActivePlayer());
-        if(checkForWin(board.getBoard(), getActivePlayer().getSymbol())) {
+        if(checkForWin(board.getBoard(), getActivePlayer().symbol)) {
             _printBoard();
-            console.log(`Player ${getActivePlayer().getSymbol()} wins!`);
+            console.log(`Player ${getActivePlayer().symbol} wins!`);
+            return;
+        }
+        else if (checkForTie(board.getBoard())) {
+            _printBoard();
+            console.log('IS A TAY')
             return;
         }
         _switchPlayerTurn();
@@ -163,21 +164,21 @@ const gameController = (() => {
 
     const checkForWin = (board, player) => {
         return (
-            (board[0].getSymbol() == player && board[1].getSymbol() == player && board[2].getSymbol() == player) ||
-            (board[3].getSymbol() == player && board[4].getSymbol() == player && board[5].getSymbol() == player) ||
-            (board[6].getSymbol() == player && board[7].getSymbol() == player && board[8].getSymbol() == player) ||
-            (board[0].getSymbol() == player && board[3].getSymbol() == player && board[6].getSymbol() == player) ||
-            (board[1].getSymbol() == player && board[4].getSymbol() == player && board[7].getSymbol() == player) ||
-            (board[2].getSymbol() == player && board[5].getSymbol() == player && board[8].getSymbol() == player) ||
-            (board[0].getSymbol() == player && board[4].getSymbol() == player && board[8].getSymbol() == player) ||
-            (board[2].getSymbol() == player && board[4].getSymbol() == player && board[6].getSymbol() == player)
+            (board[0] == player && board[1] == player && board[2] == player) ||
+            (board[3] == player && board[4] == player && board[5] == player) ||
+            (board[6] == player && board[7] == player && board[8] == player) ||
+            (board[0] == player && board[3] == player && board[6] == player) ||
+            (board[1] == player && board[4] == player && board[7] == player) ||
+            (board[2] == player && board[5] == player && board[8] == player) ||
+            (board[0] == player && board[4] == player && board[8] == player) ||
+            (board[2] == player && board[4] == player && board[6] == player)
         );
     };
 
     const checkForTie = (board) => {
         if(checkForWin(board, huPlayer) || checkForWin(board, aiPlayer)) return false;
 
-        return board.every(cell => !cell.isAvailable());
+        return board.every((cell, i) => cell != i);
     }
 
     _printBoard();
@@ -196,12 +197,13 @@ const ScreenController = (() => {
 
     const updateScreen = () => {
         const currentBoard = gameController.getBoard();
+        console.log(currentBoard)
 
         cells.forEach((cell, index) => {
-            cell.innerHTML = currentBoard[index].isAvailable() ? "" : currentBoard[index].getSymbol();
-            if(cell.innerHTML)  cell.removeEventListener('click', clickHandleBoard);
+            cell.innerHTML = typeof currentBoard[index] === 'number' ? "" : currentBoard[index];
+            if(typeof currentBoard[index] !== 'number')  cell.removeEventListener('click', clickHandleBoard);
         })
-        playerDisplay.innerHTML = gameController.getActivePlayer().getSymbol();
+        playerDisplay.innerHTML = gameController.getActivePlayer().symbol;
     };
 
     function clickHandleBoard(e) {
@@ -219,7 +221,3 @@ const ScreenController = (() => {
     updateScreen();
 
 })();
-
-
-
-
