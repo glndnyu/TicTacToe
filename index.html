@@ -9,6 +9,10 @@
 </head>
 <body>
 <div id="board" class="board">
+    <div class="symbol">
+        <button> X </button>
+        <button> O </button>
+    </div>
     <div class="cell" data-cell></div>
     <div class="cell" data-cell></div>
     <div class="cell" data-cell></div>
@@ -20,6 +24,11 @@
     <div class="cell" data-cell></div>
     <div class="panel"><span>Current Player: <em id="player"></em></span></div>
 </div>
+<div class="result">
+    <p></p>
+    <button class="restart"> RESTART </button>
+</div>
+<div class="overlay"></div>
 <script src="script.js"></script>
 </body>
 </html>
