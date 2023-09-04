@@ -133,6 +133,7 @@ const gameController = (() => {
 
     const _printBoard = () => {
         board.printBoard();
+        screenController.updateBoard();
     };
     
     const playRound = async (position) => {
@@ -140,34 +141,41 @@ const gameController = (() => {
         let _ai = aiPlayer.symbol;
         let _board;
 
-        board.makeMove(_hu, position);
-        _board = board.getBoard()
-        _printBoard();
-
-        if(checkForWin(_board, _hu)) {
-            _printBoard();
-            console.log(`Player ${_hu} wins!`);
-            return;
-        } else if (checkForTie(_board)) {
-            console.log('IS A TAY')
-            return;
-        } else {
-            await _sleep(500 + (Math.random() * 500));
-            ai.makeAIMove(board, aiPlayer);
+        
+        if(board.emptyCells().includes(position)) {
+            board.makeMove(_hu, position);
             _board = board.getBoard()
-            _printBoard()       
+            _printBoard();
 
-            if(checkForWin(_board, _ai)) {
+            if(checkForWin(_board, _hu)) {
+                await _sleep(250 + (Math.random() * 250));
                 _printBoard();
-                console.log(`Player ${_ai} wins!`);
+                console.log(`Player ${_hu} wins!`);
                 return;
-            }
-            else if (checkForTie(_board)) {
-                _printBoard();
+            } else if (checkForTie(_board)) {
+                await _sleep(250 + (Math.random() * 250));
                 console.log('IS A TAY')
                 return;
+            } else {
+                await _sleep(500 + (Math.random() * 250));
+                ai.makeAIMove(board, aiPlayer);
+                _board = board.getBoard()
+                _printBoard()       
+
+                if(checkForWin(_board, _ai)) {
+                    await _sleep(250 + (Math.random() * 250));
+                    _printBoard();
+                    console.log(`Player ${_ai} wins!`);
+                    return;
+                }
+                else if (checkForTie(_board)) {
+                    await _sleep(250 + (Math.random() * 250));
+                    _printBoard();
+                    console.log('IS A TAY')
+                    return;
+                }
             }
-        }
+        } else console.log('Cell Taken!');
     };
 
     const checkForWin = (board, player) => {
@@ -192,43 +200,61 @@ const gameController = (() => {
     return { playRound, getActivePlayer, getBoard: board.getBoard, checkForWin, checkForTie };  
 })();
 
-const ScreenController = (() => {
-    const cells = document.querySelectorAll('.cell');
-    const playerDisplay = document.getElementById('player');
+const screenController = (() => {
+    const screenCells = document.querySelectorAll('.cell')
 
-    cells.forEach((cell, index) => {
+    screenCells.forEach((cell, index) => {
         cell.dataset.cell = index;
-        cell.addEventListener('click', clickHandleBoard);
-    });
+        cell.addEventListener('click', gameController.playRound.bind(cell, index));
+    })
 
-    const updateScreen = () => {
-        const currentBoard = gameController.getBoard();
-
-        cells.forEach((cell, index) => {
-            cell.innerHTML = typeof currentBoard[index] === 'number' ? "" : currentBoard[index];
-            if(typeof currentBoard[index] !== 'number')  cell.removeEventListener('click', clickHandleBoard);
-        })
-        playerDisplay.innerHTML = gameController.getActivePlayer().symbol;
-    };
-
-    function clickHandleBoard(e) {
-        const index = parseInt(e.target.dataset.cell);
-        const _player = gameController.getActivePlayer();
-        gameController.playRound(index);
-        updateScreen();
-        e.target.removeEventListener('click', clickHandleBoard);
+    const updateBoard = () => {
+        let _board = gameController.getBoard();
+        screenCells.forEach((cell, index) => {
+        cell.innerHTML = typeof _board[index] === 'number' ? "" : _board[index];
+        });
     }
 
-    function displayWinner(player) {
-        console.log(player + " WINS!");
-    }
-
-    function endGame(){
-        cells.forEach(cell => cell.removeEventListener('click', clickHandleBoard));
-    }
-
-    updateScreen();
-
-    return { displayWinner }
-
+    return { updateBoard };
 })();
+
+// const ScreenController = (() => {
+//     const cells = document.querySelectorAll('.cell');
+//     const playerDisplay = document.getElementById('player');
+
+//     cells.forEach((cell, index) => {
+//         cell.dataset.cell = index;
+//         cell.addEventListener('click', clickHandleBoard);
+//     });
+
+//     const updateScreen = () => {
+//         const currentBoard = gameController.getBoard();
+
+//         cells.forEach((cell, index) => {
+//             cell.innerHTML = typeof currentBoard[index] === 'number' ? "" : currentBoard[index];
+//             if(typeof currentBoard[index] !== 'number')  cell.removeEventListener('click', clickHandleBoard);
+//         })
+//         playerDisplay.innerHTML = gameController.getActivePlayer().symbol;
+//     };
+
+//     function clickHandleBoard(e) {
+//         const index = parseInt(e.target.dataset.cell);
+//         const _player = gameController.getActivePlayer();
+//         gameController.playRound(index);
+//         updateScreen();
+//         e.target.removeEventListener('click', clickHandleBoard);
+//     }
+
+//     function displayWinner(player) {
+//         console.log(player + " WINS!");
+//     }
+
+//     function endGame(){
+//         cells.forEach(cell => cell.removeEventListener('click', clickHandleBoard));
+//     }
+
+//     updateScreen();
+
+//     return { displayWinner }
+
+// })();
