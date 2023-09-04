@@ -121,6 +121,10 @@ const gameController = (() => {
     
     let activePlayer = huPlayer;
 
+    const _sleep = (ms) => {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
     const _switchPlayerTurn = () => {
         activePlayer = activePlayer === huPlayer ? aiPlayer : huPlayer;
     };
@@ -131,35 +135,39 @@ const gameController = (() => {
         board.printBoard();
     };
     
-    const playRound = (position) => {
-        const player = getActivePlayer();
-        board.makeMove(player.symbol, position);
-        if(checkForWin(board.getBoard(), player.symbol)) {
-            _printBoard();
-            console.log(`Player ${player.symbol} wins!`);
-            return;
-        } else if (checkForTie(board.getBoard())) {
-            console.log('IS A TAY')
-            return;
-        }
-        _switchPlayerTurn();
-        
+    const playRound = async (position) => {
+        let _hu = huPlayer.symbol;
+        let _ai = aiPlayer.symbol;
+        let _board;
 
-        ai.makeAIMove(board, getActivePlayer());
-        if(checkForWin(board.getBoard(), getActivePlayer().symbol)) {
-            _printBoard();
-            console.log(`Player ${getActivePlayer().symbol} wins!`);
-            return;
-        }
-        else if (checkForTie(board.getBoard())) {
-            _printBoard();
-            console.log('IS A TAY')
-            return;
-        }
-        _switchPlayerTurn();
+        board.makeMove(_hu, position);
+        _board = board.getBoard()
         _printBoard();
 
-        
+        if(checkForWin(_board, _hu)) {
+            _printBoard();
+            console.log(`Player ${_hu} wins!`);
+            return;
+        } else if (checkForTie(_board)) {
+            console.log('IS A TAY')
+            return;
+        } else {
+            await _sleep(500 + (Math.random() * 500));
+            ai.makeAIMove(board, aiPlayer);
+            _board = board.getBoard()
+            _printBoard()       
+
+            if(checkForWin(_board, _ai)) {
+                _printBoard();
+                console.log(`Player ${_ai} wins!`);
+                return;
+            }
+            else if (checkForTie(_board)) {
+                _printBoard();
+                console.log('IS A TAY')
+                return;
+            }
+        }
     };
 
     const checkForWin = (board, player) => {
@@ -181,8 +189,6 @@ const gameController = (() => {
         return board.every((cell, i) => cell != i);
     }
 
-    _printBoard();
-    
     return { playRound, getActivePlayer, getBoard: board.getBoard, checkForWin, checkForTie };  
 })();
 
@@ -197,7 +203,6 @@ const ScreenController = (() => {
 
     const updateScreen = () => {
         const currentBoard = gameController.getBoard();
-        console.log(currentBoard)
 
         cells.forEach((cell, index) => {
             cell.innerHTML = typeof currentBoard[index] === 'number' ? "" : currentBoard[index];
@@ -214,10 +219,16 @@ const ScreenController = (() => {
         e.target.removeEventListener('click', clickHandleBoard);
     }
 
+    function displayWinner(player) {
+        console.log(player + " WINS!");
+    }
+
     function endGame(){
         cells.forEach(cell => cell.removeEventListener('click', clickHandleBoard));
     }
 
     updateScreen();
+
+    return { displayWinner }
 
 })();
