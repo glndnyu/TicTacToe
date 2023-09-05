@@ -62,9 +62,9 @@ const AI = () => {
         const availSpots_length = availSpots.length;
         const _board = newBoard.getBoard();
 
-        if (gameController.checkForWin(_board, player) && player === 'X'){
+        if (gameController.checkForWin(_board, 'X')){
             return { score: -10 };
-        } else if (gameController.checkForWin(_board, player) && player === 'O'){
+        } else if (gameController.checkForWin(_board, 'O')){
             return { score: 10 };
         } else if (gameController.checkForTie(_board)) {
             return { score: 0 };
@@ -94,16 +94,16 @@ const AI = () => {
         let bestMove;
         let moves_length = moves.length;
         if (player === 'O') {
-            let bestScore = -Infinity;
+            let bestScore = -10000;
             for (let i = 0; i < moves_length; i++){
                 if (moves[i].score > bestScore) {
-                    bestScore = moves[i].score;
+                        bestScore = moves[i].score;
                     bestMove = i;
                 }
             }
 
         } else {
-            let bestScore = Infinity;
+            let bestScore = 10000;
             for (let i = 0; i < moves_length; i++){
                 if (moves[i].score < bestScore) {
                     bestScore = moves[i].score;
@@ -146,7 +146,6 @@ const gameController = (() => {
         let _ai = aiPlayer.symbol;
         let _board;
 
-        
         if(board.emptyCells().includes(position)) {
             board.makeMove(_hu, position);
             _board = board.getBoard()
