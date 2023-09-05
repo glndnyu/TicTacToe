@@ -150,33 +150,39 @@ const gameController = (() => {
         if(board.emptyCells().includes(position)) {
             board.makeMove(_hu, position);
             _board = board.getBoard()
+            _switchPlayerTurn();
             _printBoard();
 
             if(checkForWin(_board, _hu)) {
                 await _sleep(250 + (Math.random() * 250));
                 _printBoard();
+                screenController.showResult(-1);
                 console.log(`Player ${_hu} wins!`);
                 return;
             } else if (checkForTie(_board)) {
                 await _sleep(250 + (Math.random() * 250));
+                _printBoard();
+                screenController.showResult(0);
                 console.log('IS A TAY')
                 return;
             } else {
                 await _sleep(500 + (Math.random() * 250));
                 ai.makeAIMove(board, aiPlayer);
+                _switchPlayerTurn();
                 _board = board.getBoard()
                 _printBoard()       
 
                 if(checkForWin(_board, _ai)) {
                     await _sleep(250 + (Math.random() * 250));
                     _printBoard();
+                    screenController.showResult(1);
                     console.log(`Player ${_ai} wins!`);
                     return;
                 }
                 else if (checkForTie(_board)) {
                     await _sleep(250 + (Math.random() * 250));
                     _printBoard();
-                    console.log('IS A TAY')
+                    screenController.showResult(0);
                     return;
                 }
             }
@@ -208,16 +214,21 @@ const gameController = (() => {
 const screenController = (() => {
     const screenCells = document.querySelectorAll('.cell');
     const restart = document.querySelector('.restart');
+    const playerDisplay = document.getElementById('player');
+    const resultModal = document.querySelector('.result');
+    const resultPara = document.querySelector('.result-p');
+    const overLay = document.querySelector('.overlay');
 
-    screenCells.forEach((cell, index) => {
-        cell.dataset.cell = index;
-        cell.addEventListener('click', gameController.playRound.bind(cell, index));
-    });
+    const exitModal = () => {
+        resultModal.classList.remove('active');
+        overLay.classList.remove('active');
+        restartBoard();
+    }
 
-    restart.addEventListener('click', () => {
+    const restartBoard = () => {
         gameController.clearBoard();
         updateBoard();
-    });
+    }
 
     const updateBoard = () => {
         let _board = gameController.getBoard();
@@ -226,11 +237,28 @@ const screenController = (() => {
         });
     }
 
-    const showResult = (player) => {
-
+    const showResult = (result) => {
+        if(result == 0) resultPara.innerHTML = 'IS A TAY!';
+        if(result == -1) resultPara.innerHTML = 'Player X wins!';
+        if(result == 1) resultPara.innerHTML = 'Player O wins!';
+        resultModal.classList.add('active');
+        overLay.classList.add('active');
     }
 
-    return { updateBoard };
+    const _init = (() => {
+        overLay.onclick = exitModal;
+
+        screenCells.forEach((cell, index) => {
+            cell.dataset.cell = index;
+            cell.addEventListener('click', gameController.playRound.bind(cell, index));
+        });
+    
+        restart.addEventListener('click', restartBoard);
+    })();
+
+    updateBoard();
+
+    return { updateBoard, showResult };
 })();
 
 // const ScreenController = (() => {

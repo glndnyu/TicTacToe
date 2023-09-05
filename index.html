@@ -10,8 +10,8 @@
 <body>
 <div id="board" class="board">
     <div class="symbol">
-        <button> X </button>
-        <button> O </button>
+        <button class="playerX"> X </button>
+        <button class="playerO"> O </button>
     </div>
     <div class="cell" data-cell></div>
     <div class="cell" data-cell></div>
@@ -22,11 +22,10 @@
     <div class="cell" data-cell></div>
     <div class="cell" data-cell></div>
     <div class="cell" data-cell></div>
-    <div class="panel"><span>Current Player: <em id="player"></em></span></div>
+    <button class="restart"> RESTART </button>
 </div>
 <div class="result">
-    <p></p>
-    <button class="restart"> RESTART </button>
+    <p class="result-p"></p>
 </div>
 <div class="overlay"></div>
 <script src="script.js"></script>
