@@ -36,12 +36,17 @@ const Board = () => {
         return cells.filter(cell => cell.isAvailable()).map(cell => cell.getSymbol());
     }
 
+    const clearBoard = () => {
+        cells.forEach((cell, i) => cell.addSymbol(i));
+        printBoard();
+    }
+
     const printBoard = () => {
             console.log(cells.reduce((rows, key, index) => (index % 3 == 0 ? rows.push([key.getSymbol()]) 
             : rows[rows.length-1].push(key.getSymbol())) && rows, []));
     };
 
-    return { getBoard, makeMove, printBoard, emptyCells };
+    return { getBoard, makeMove, emptyCells, clearBoard, printBoard};
 };
 
 const AI = () => {
@@ -197,22 +202,32 @@ const gameController = (() => {
         return board.every((cell, i) => cell != i);
     }
 
-    return { playRound, getActivePlayer, getBoard: board.getBoard, checkForWin, checkForTie };  
+    return { playRound, getActivePlayer, getBoard: board.getBoard, checkForWin, checkForTie, clearBoard: board.clearBoard };  
 })();
 
 const screenController = (() => {
-    const screenCells = document.querySelectorAll('.cell')
+    const screenCells = document.querySelectorAll('.cell');
+    const restart = document.querySelector('.restart');
 
     screenCells.forEach((cell, index) => {
         cell.dataset.cell = index;
         cell.addEventListener('click', gameController.playRound.bind(cell, index));
-    })
+    });
+
+    restart.addEventListener('click', () => {
+        gameController.clearBoard();
+        updateBoard();
+    });
 
     const updateBoard = () => {
         let _board = gameController.getBoard();
         screenCells.forEach((cell, index) => {
         cell.innerHTML = typeof _board[index] === 'number' ? "" : _board[index];
         });
+    }
+
+    const showResult = (player) => {
+
     }
 
     return { updateBoard };
