@@ -14,14 +14,12 @@ const Cell = (i) => {
     return { addSymbol, getSymbol, isAvailable };
 }
 
-//Board controls
 const Board = () => {
     const cells = Array.from({ length: 9}, (_, i) => Cell(i));
 
     const getBoard = () => cells.map(cell => cell.getSymbol());
 
     const makeMove = (player, index) => {
-
         if (typeof player === 'number'){
             cells[index].addSymbol(player);
             return
@@ -32,9 +30,7 @@ const Board = () => {
         cells[index].addSymbol(player);
     };
 
-    const emptyCells = () => {
-        return cells.filter(cell => cell.isAvailable()).map(cell => cell.getSymbol());
-    }
+    const emptyCells = () => cells.filter(cell => cell.isAvailable()).map(cell => cell.getSymbol());
 
     const clearBoard = () => {
         cells.forEach((cell, i) => cell.addSymbol(i));
@@ -42,7 +38,8 @@ const Board = () => {
     }
 
     const printBoard = () => {
-            console.log(cells.reduce((rows, key, index) => (index % 3 == 0 ? rows.push([key.getSymbol()]) 
+            console.log(cells.reduce((rows, key, index) => 
+            (index % 3 == 0 ? rows.push([key.getSymbol()]) 
             : rows[rows.length-1].push(key.getSymbol())) && rows, []));
     };
 
@@ -61,10 +58,12 @@ const AI = () => {
         const availSpots = newBoard.emptyCells();
         const availSpots_length = availSpots.length;
         const _board = newBoard.getBoard();
+        const _ai = gameController.getAIPlayer().symbol;
+        const _hu = gameController.getHuPlayer().symbol;
 
-        if (gameController.checkForWin(_board, 'X')){
+        if (gameController.checkForWin(_board, _hu)){
             return { score: -10 };
-        } else if (gameController.checkForWin(_board, 'O')){
+        } else if (gameController.checkForWin(_board, _ai)){
             return { score: 10 };
         } else if (gameController.checkForTie(_board)) {
             return { score: 0 };
@@ -78,11 +77,11 @@ const AI = () => {
 
             newBoard.makeMove(player, availSpots[i])
 
-            if (player === 'O'){
-                let result = minimax(newBoard, 'X');
+            if (player === _ai){
+                let result = minimax(newBoard, _hu);
                 move.score = result.score
             } else {
-                let result = minimax(newBoard, 'O');
+                let result = minimax(newBoard, _ai);
                 move.score = result.score
             }
 
@@ -93,7 +92,7 @@ const AI = () => {
 
         let bestMove;
         let moves_length = moves.length;
-        if (player === 'O') {
+        if (player === _ai) {
             let bestScore = -10000;
             for (let i = 0; i < moves_length; i++){
                 if (moves[i].score > bestScore) {
@@ -118,72 +117,74 @@ const AI = () => {
 
 };
 
+const _sleep = (ms) => {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 const gameController = (() => {
     const board = Board();
     const ai = AI();
     const huPlayer = Player('X');
     const aiPlayer = Player('O', true);
     
-    let activePlayer = huPlayer;
-
-    const _sleep = (ms) => {
-        return new Promise(resolve => setTimeout(resolve, ms));
-    }
-
-    const _switchPlayerTurn = () => {
-        activePlayer = activePlayer === huPlayer ? aiPlayer : huPlayer;
+    const switchPlayer = (symbol) => {
+        huPlayer.symbol = symbol;
+        aiPlayer.symbol = symbol === 'X' ? 'O' : 'X';
     };
 
-    const getActivePlayer = () => activePlayer;
+    const getAIPlayer = () => aiPlayer;
+
+    const getHuPlayer = () => huPlayer;
 
     const _printBoard = () => {
         board.printBoard();
         screenController.updateBoard();
     };
+
+    const aiMove = async () => {
+        let _ai = aiPlayer.symbol;
+        let _board;
+        await _sleep(500 + (Math.random() * 100));
+        ai.makeAIMove(board, aiPlayer);
+        screenController.activateBoard();
+        _board = board.getBoard()
+        _printBoard()       
+
+        if(checkForWin(_board, _ai)) {
+            await _sleep(250 + (Math.random() * 250));
+            _printBoard();
+            screenController.showResult(1, _ai);
+            return;
+        }
+        else if (checkForTie(_board)) {
+            await _sleep(250 + (Math.random() * 250));
+            _printBoard();
+            screenController.showResult(0);
+            return;
+        }
+    }
     
     const playRound = async (position) => {
         let _hu = huPlayer.symbol;
-        let _ai = aiPlayer.symbol;
         let _board;
-
         if(board.emptyCells().includes(position)) {
             board.makeMove(_hu, position);
             _board = board.getBoard()
-            _switchPlayerTurn();
             _printBoard();
 
             if(checkForWin(_board, _hu)) {
                 await _sleep(250 + (Math.random() * 250));
                 _printBoard();
-                screenController.showResult(-1);
-                console.log(`Player ${_hu} wins!`);
+                screenController.showResult(-1, _hu);
                 return;
             } else if (checkForTie(_board)) {
                 await _sleep(250 + (Math.random() * 250));
                 _printBoard();
                 screenController.showResult(0);
-                console.log('IS A TAY')
                 return;
             } else {
-                await _sleep(500 + (Math.random() * 250));
-                ai.makeAIMove(board, aiPlayer);
-                _switchPlayerTurn();
-                _board = board.getBoard()
-                _printBoard()       
-
-                if(checkForWin(_board, _ai)) {
-                    await _sleep(250 + (Math.random() * 250));
-                    _printBoard();
-                    screenController.showResult(1);
-                    console.log(`Player ${_ai} wins!`);
-                    return;
-                }
-                else if (checkForTie(_board)) {
-                    await _sleep(250 + (Math.random() * 250));
-                    _printBoard();
-                    screenController.showResult(0);
-                    return;
-                }
+                screenController.deactivateBoard();
+                aiMove();
             }
         } else console.log('Cell Taken!');
     };
@@ -207,26 +208,39 @@ const gameController = (() => {
         return board.every((cell, i) => cell != i);
     }
 
-    return { playRound, getActivePlayer, getBoard: board.getBoard, checkForWin, checkForTie, clearBoard: board.clearBoard };  
+    return { playRound, aiMove, getBoard: board.getBoard, checkForWin, checkForTie, clearBoard: board.clearBoard, switchPlayer, getAIPlayer, getHuPlayer };  
 })();
 
 const screenController = (() => {
     const screenCells = document.querySelectorAll('.cell');
     const restart = document.querySelector('.restart');
-    const playerDisplay = document.getElementById('player');
     const resultModal = document.querySelector('.result');
     const resultPara = document.querySelector('.result-p');
     const overLay = document.querySelector('.overlay');
+    const playerX = document.querySelector('.playerX');
+    const playerO = document.querySelector('.playerO');
 
     const exitModal = () => {
         resultModal.classList.remove('active');
         overLay.classList.remove('active');
         restartBoard();
+        gameController.switchPlayer('X')
     }
 
     const restartBoard = () => {
         gameController.clearBoard();
         updateBoard();
+    }
+
+    const switchPlayer = async (e) => {
+        const huSymbol = e.target.dataset.symbol;
+        gameController.switchPlayer(e.target.dataset.symbol)
+        restartBoard();
+        if(huSymbol === 'O'){
+            console.log(e.target)
+            await _sleep(250 + (Math.random() * 250));
+            gameController.aiMove();
+        }
     }
 
     const updateBoard = () => {
@@ -236,12 +250,20 @@ const screenController = (() => {
         });
     }
 
-    const showResult = (result) => {
+    const showResult = (result, symbol = null) => {
         if(result == 0) resultPara.innerHTML = 'IS A TAY!';
-        if(result == -1) resultPara.innerHTML = 'Player X wins!';
-        if(result == 1) resultPara.innerHTML = 'Player O wins!';
+        if(result == -1) resultPara.innerHTML = `Player ${symbol} wins!`;
+        if(result == 1) resultPara.innerHTML = `Player ${symbol} wins!`;
         resultModal.classList.add('active');
         overLay.classList.add('active');
+    }
+
+    const deactivateBoard = () => {
+        screenCells.forEach(cell => cell.setAttribute('disabled', ''));
+    }
+
+    const activateBoard = () => {
+        screenCells.forEach(cell => cell.removeAttribute('disabled'));
     }
 
     const _init = (() => {
@@ -253,50 +275,12 @@ const screenController = (() => {
         });
     
         restart.addEventListener('click', restartBoard);
+
+        playerX.addEventListener('click', switchPlayer);
+        playerO.addEventListener('click', switchPlayer);
     })();
 
     updateBoard();
 
-    return { updateBoard, showResult };
+    return { updateBoard, showResult, deactivateBoard, activateBoard};
 })();
-
-// const ScreenController = (() => {
-//     const cells = document.querySelectorAll('.cell');
-//     const playerDisplay = document.getElementById('player');
-
-//     cells.forEach((cell, index) => {
-//         cell.dataset.cell = index;
-//         cell.addEventListener('click', clickHandleBoard);
-//     });
-
-//     const updateScreen = () => {
-//         const currentBoard = gameController.getBoard();
-
-//         cells.forEach((cell, index) => {
-//             cell.innerHTML = typeof currentBoard[index] === 'number' ? "" : currentBoard[index];
-//             if(typeof currentBoard[index] !== 'number')  cell.removeEventListener('click', clickHandleBoard);
-//         })
-//         playerDisplay.innerHTML = gameController.getActivePlayer().symbol;
-//     };
-
-//     function clickHandleBoard(e) {
-//         const index = parseInt(e.target.dataset.cell);
-//         const _player = gameController.getActivePlayer();
-//         gameController.playRound(index);
-//         updateScreen();
-//         e.target.removeEventListener('click', clickHandleBoard);
-//     }
-
-//     function displayWinner(player) {
-//         console.log(player + " WINS!");
-//     }
-
-//     function endGame(){
-//         cells.forEach(cell => cell.removeEventListener('click', clickHandleBoard));
-//     }
-
-//     updateScreen();
-
-//     return { displayWinner }
-
-// })();

@@ -14,6 +14,7 @@
     width: 100px;
     height: 100px;
     background-color: #ddd;
+    color: white;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -21,6 +22,10 @@
     cursor: pointer;
     font-family: 'Drip October', sans-serif;
     border: 2px solid #888;
+}
+
+.cell:disabled{
+    color: white;
 }
 
 /* Style the panel */
